@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Y Seçkisi</title>
+<style>
+  :root { --pink:#ff6ea1; --dark:#0b0b0f; --glass:rgba(255,255,255,.08); }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: radial-gradient(1200px 800px at 70% -20%, #26293b, #0a0a0e); color: #fff; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+  a { color: inherit; }
+  .center { display:flex; align-items:center; justify-content:center; }
+
+  /* Login */
+  #login { height:100%; }
+  .card {
+    width: min(92%, 420px);
+    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+    border: 1px solid rgba(255,255,255,.1);
+    backdrop-filter: blur(10px);
+    padding: 28px;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.02);
+    position: relative; overflow: hidden;
+  }
+  .card::before{
+    content:"";
+    position:absolute; inset:-2px;
+    background: conic-gradient(from 180deg at 50% 50%, rgba(255,255,255,.12), transparent 20%, transparent 70%, rgba(255,255,255,.12));
+    filter: blur(18px); z-index:-1;
+  }
+  h1 { margin: 6px 0 18px; font-weight: 800; letter-spacing: .2px; }
+  .hint { font-size: 12px; opacity:.7; margin-bottom: 12px; }
+  label { display:block; font-size: 13px; opacity:.8; margin: 8px 0 6px; }
+  input { width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14);
+           background: rgba(5,5,10,.6); color:#fff; outline:none; transition:.25s; }
+  input:focus { border-color: var(--pink); box-shadow: 0 0 0 4px rgba(255,110,161,.16); }
+  .btn { width:100%; padding:12px 16px; border-radius:14px; border:0; color:#000; font-weight:800;
+          background: linear-gradient(135deg, #ffd6e8, #ff89b5); cursor:pointer; transition:transform .12s ease; }
+  .btn:active { transform: scale(.98); }
+  .badge { display:inline-flex; align-items:center; gap:8px; background:var(--glass); border:1px solid rgba(255,255,255,.14);
+            padding:8px 12px; border-radius:999px; font-size:12px; margin-bottom:12px; }
+  .err { margin-top:8px; color:#ffbacf; min-height:20px; font-size:12px; }
+
+  /* Earth stage */
+  #earthStage { position:fixed; inset:0; display:none; background:#000; }
+  #three { position:absolute; inset:0; }
+  .skip { position:absolute; right:14px; bottom:12px; z-index:5; background: rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.15);
+          padding:8px 12px; border-radius:999px; cursor:pointer; font-size:12px; }
+
+  /* Gallery */
+  #gallery { display:none; min-height:100%; padding: clamp(14px, 3vw, 24px); }
+  .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 900px; margin: 60px auto; }
+  .tile { position:relative; aspect-ratio:1/1; overflow:hidden; border-radius:16px; border:1px solid rgba(255,255,255,.08);
+          background:#111; transform: translateY(12px) scale(.98); opacity:0; }
+  .tile img { width:100%; height:100%; object-fit:cover; filter: contrast(1.06) saturate(1.06) brightness(1.03); transform: scale(1.02);
+              transition: transform .6s ease, filter .6s ease; }
+  .tile:hover img { transform: scale(1.08) rotate(.6deg); filter: contrast(1.12) saturate(1.1) drop-shadow(0 10px 18px rgba(0,0,0,.3)); }
+  .glow::after { content:""; position:absolute; inset: -40%; background: radial-gradient(circle at 60% 20%, rgba(255,110,161,.22), transparent 35%); mix-blend-mode: screen; pointer-events:none; }
+  header.top { position: sticky; top: 0; padding: 8px 0; display:flex; justify-content:center; backdrop-filter: blur(8px);
+               background: linear-gradient(180deg, rgba(10,10,14,.9), rgba(10,10,14,.4) 60%, transparent); z-index: 4; border-bottom: 1px solid rgba(255,255,255,.06); }
+  header.top h2 { letter-spacing:.4px; font-weight: 900; background: linear-gradient(90deg, #fff, #ffb3cc); -webkit-background-clip:text; -webkit-text-fill-color: transparent; }
+</style>
+</head>
+<body>
+
+<section id="login" class="center">
+  <div class="card">
+    <div class="badge">🔒 Özel erişim</div>
+    <h1>Giriş</h1>
+    <div class="hint">Kullanıcı adı: <b>yagmuracici</b> · Şifre: <b>çokgüzelsin</b></div>
+    <label for="u">Kullanıcı Adı</label>
+    <input id="u" autocomplete="off" placeholder="username">
+    <label for="p">Şifre</label>
+    <input id="p" type="password" placeholder="••••••••••">
+    <div class="err" id="err"></div>
+    <button class="btn" id="go">Giriş Yap</button>
+  </div>
+</section>
+
+<section id="earthStage">
+  <button class="skip" id="skip">Geç</button>
+  <canvas id="three"></canvas>
+</section>
+
+<section id="gallery">
+  <header class="top"><h2>✨ AŞIĞIM AŞIK</h2></header>
+  <h3>berkede çok yakışıklı çocuk</h3>
+  <div class="grid" id="grid"></div>
+</section>
+
+<!-- libs -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+
+<script>
+const IMAGES = [
+  "Ekran görüntüsü 2025-09-03 193832.png","Ekran görüntüsü 2025-09-03 171418.png","Ekran görüntüsü 2025-09-03 193936.png","Ekran görüntüsü 2025-09-03 194030.png","Ekran görüntüsü 2025-09-03 194105.png","Ekran görüntüsü 2025-09-03 194140.png",
+  "Ekran görüntüsü 2025-09-03 194219.png","image.png","image copy.png","image copy 2.png","image copy 3.png","image copy 4.png",
+  "Ekran görüntüsü 2025-09-03 194557.png","image copy 5.png","image copy 6.png","image copy 7.png","image copy 8.png",
+];
+const VALID_USER = "yagmuracici";
+const VALID_PASS = "çokgüzelsin";
+
+const el = (id)=>document.getElementById(id);
+const login = el('login');
+const earthStage = el('earthStage');
+const gallery = el('gallery');
+const grid = el('grid');
+const err = el('err');
+
+el('go').addEventListener('click', ()=>{ 
+  const u = el('u').value.trim(); 
+  const p = el('p').value.trim();
+  if(u===VALID_USER && p===VALID_PASS) startJourney();
+  else { err.textContent = "Yanlış kullanıcı adı veya şifre."; }
+});
+['u','p'].forEach(id=>el(id).addEventListener('keydown', e=>{ if(e.key==='Enter') el('go').click(); }));
+
+function startJourney(){
+  login.style.display='none';
+  earthStage.style.display='block';
+  initEarth(() => {
+    earthStage.style.display='none';
+    showGallery();
+  });
+}
+
+function showGallery(){
+  gallery.style.display='block';
+  IMAGES.forEach((src, i)=>{
+    const d = document.createElement('div');
+    d.className = 'tile glow';
+    const img = new Image();
+    img.src = src;
+    img.decoding = 'async';
+    img.loading = 'lazy';
+    d.appendChild(img);
+    grid.appendChild(d);
+  });
+
+  const tiles = Array.from(document.querySelectorAll('.tile'));
+  tiles.forEach((t,i)=>{
+    gsap.to(t, { opacity:1, y:0, scale:1, duration:.7, delay: .06*i, ease: 'power3.out' });
+    const drift = () => gsap.to(t, { y: '+=6', x: '+=4', duration:2.8, yoyo:true, repeat:-1, ease:'sine.inOut', delay: Math.random()*1.2 });
+    drift();
+    t.addEventListener('mousemove', (e)=>{ t.style.setProperty('--mx', e.offsetX+'px'); t.style.setProperty('--my', e.offsetY+'px'); });
+  });
+}
+
+// 3D Earth zoom to Izmir
+function initEarth(done){
+  const canvas = el('three');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 1000);
+  camera.position.set(0,0,5);
+  renderer.setSize(innerWidth, innerHeight);
+  window.addEventListener('resize', ()=>{
+    camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight);
+  });
+
+  scene.background = new THREE.Color(0x000000);
+
+  const light = new THREE.DirectionalLight(0xffffff, 1.2);
+  light.position.set(5,3,5); scene.add(light);
+  scene.add(new THREE.AmbientLight(0xffffff, .35));
+
+  const geo = new THREE.SphereGeometry(1.6, 64, 64);
+  const texLoader = new THREE.TextureLoader();
+  const tex = texLoader.load('https://raw.githubusercontent.com/keaukraine/planet-textures/master/8k_earth_daymap.jpg');
+  const mat = new THREE.MeshPhongMaterial({ map: tex });
+  const earth = new THREE.Mesh(geo, mat);
+  scene.add(earth);
+
+  // stars
+  const starsGeo = new THREE.BufferGeometry();
+  const starCnt = 5000; const positions = new Float32Array(starCnt*3);
+  for(let i=0;i<starCnt;i++){ positions[i*3+0]=(Math.random()-0.5)*100; positions[i*3+1]=(Math.random()-0.5)*100; positions[i*3+2]=(Math.random()-0.5)*100; }
+  starsGeo.setAttribute('position', new THREE.BufferAttribute(positions,3));
+  const stars = new THREE.Points(starsGeo, new THREE.PointsMaterial({ size:0.02, color:0xffffff }));
+  scene.add(stars);
+
+  // Rotate to face İzmir (lat 38.4237, lon 27.1428)
+  
+  const lat = 38.4237 * Math.PI/180;
+  const lon = 27.1428 * Math.PI/180;
+  gsap.to(earth.rotation, { y: -lon, x: lat - Math.PI/2, duration: 4, ease: 'power2.inOut' });
+
+  // Camera zoom-in
+  const tl = gsap.timeline({ onComplete: () => setTimeout(()=>done && done(), 300) });
+  tl.fromTo(camera.position, { z: 6.5 }, { z: 3.2, duration: 3.8, ease: 'power2.in' })
+    .to(camera.position, { z: 1.9, duration: 2.4, ease: 'power3.out' }, '>-0.8')
+    .to(earth.rotation, { y: '-=0.8', duration: 2.2, ease:'power1.inOut' }, '<');
+
+  // Skip
+  document.getElementById('skip').onclick = () => { tl.progress(1); done && done(); };
+
+  // Render loop
+  function animate(){
+    requestAnimationFrame(animate);
+    earth.rotation.y += 0.0006;
+    renderer.render(scene, camera);
+  }
+  animate();
+}
+</script>
+</body>
+</html>
